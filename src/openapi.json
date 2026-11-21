@@ -1,0 +1,72 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Void API",
+    "version": "1.0.0",
+    "description": "An open-source REST API base."
+  },
+  "tags": [
+    {
+      "name": "AI",
+      "description": "Artificial intelligence endpoints"
+    }
+  ],
+  "paths": {
+    "/ai/chatgpt": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Chat with ChatGPT (OpenAI)",
+        "description": "Uses the official OpenAI API. Set OPENAI_API_KEY in .env.",
+        "parameters": [
+          {
+            "name": "text",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Your message",
+            "example": "Hello!"
+          },
+          {
+            "name": "system_prompt",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional system prompt"
+          },
+          {
+            "name": "conversation",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional history as JSON: [{\"role\":\"user\",\"content\":\"...\"},{\"role\":\"assistant\",\"content\":\"...\"}]"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Missing or invalid parameter"
+          },
+          "429": {
+            "description": "OpenAI rate limit"
+          },
+          "500": {
+            "description": "Server error (e.g. missing API key)"
+          },
+          "502": {
+            "description": "OpenAI request failed"
+          }
+        }
+      }
+    }
+  }
+}
