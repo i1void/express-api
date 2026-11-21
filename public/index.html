@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API Docs</title>
+<link rel="icon" href="/icon.png" type="image/png">
+<style>
+:root {
+  --bg: #fff; --fg: #1a1a1a; --muted: #6b7280; --line: #e5e7eb; --soft: #f9fafb; --code: #0f172a; --code-fg: #e2e8f0;
+  --get: #2563eb; --post: #16a34a; --put: #d97706; --patch: #0d9488; --delete: #dc2626;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0b0d10; --fg: #e5e7eb; --muted: #9ca3af; --line: #23272e; --soft: #12151a; --code: #05070a; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 860px; margin: 0 auto; padding: 48px 16px 80px; }
+header h1 { font-size: 24px; margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
+header .ver { font-size: 11px; font-weight: 600; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; color: var(--muted); }
+header p { margin: 4px 0 0; color: var(--muted); }
+header a { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 32px 0 8px; font-weight: 600; }
+h2 small { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 8px; }
+.op { border: 1px solid var(--line); border-radius: 6px; margin-bottom: 6px; overflow: hidden; }
+.op summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 9px 12px; }
+.op summary::-webkit-details-marker { display: none; }
+.op summary:hover { background: var(--soft); }
+.m { font: 700 11px var(--mono); color: #fff; border-radius: 4px; min-width: 52px; text-align: center; padding: 3px 0; text-transform: uppercase; }
+.m.get { background: var(--get); } .m.post { background: var(--post); } .m.put { background: var(--put); }
+.m.patch { background: var(--patch); } .m.delete { background: var(--delete); }
+.path { font: 13px var(--mono); }
+.sum { color: var(--muted); margin-left: auto; font-size: 13px; text-align: right; }
+.body { border-top: 1px solid var(--line); padding: 14px 12px; background: var(--soft); }
+.row { display: grid; grid-template-columns: 170px 1fr; gap: 12px; padding: 8px 0; align-items: start; }
+.row + .row { border-top: 1px dashed var(--line); }
+.pn { font: 600 13px var(--mono); } .req { color: var(--delete); }
+.pt { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.pd { color: var(--muted); font-size: 12px; margin-top: 2px; }
+input[type=text], textarea { width: 100%; font: 13px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--fg); }
+input:focus, textarea:focus { outline: 2px solid var(--get); outline-offset: -1px; }
+.actions { display: flex; gap: 8px; margin-top: 12px; }
+button { font: 600 13px system-ui, sans-serif; padding: 6px 14px; border-radius: 4px; border: 1px solid var(--fg); background: var(--fg); color: var(--bg); cursor: pointer; }
+button.ghost { background: transparent; color: var(--fg); border-color: var(--line); }
+button:disabled { opacity: .5; cursor: wait; }
+pre { margin: 6px 0 0; padding: 10px 12px; background: var(--code); color: var(--code-fg); border-radius: 4px; overflow: auto; font: 12px/1.55 var(--mono); max-height: 420px; white-space: pre-wrap; word-break: break-word; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-top: 14px; }
+.status { font: 600 12px var(--mono); }
+.ok { color: var(--post); } .err { color: var(--delete); }
+.resp { font-size: 12px; color: var(--muted); } .resp b { font-family: var(--mono); color: var(--fg); }
+footer { margin-top: 48px; color: var(--muted); font-size: 12px; }
+@media (max-width: 560px) { .row { grid-template-columns: 1fr; gap: 4px; } .sum { display: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1><span id="title">API</span><span class="ver" id="ver"></span></h1>
+    <p id="desc"></p>
+    <p><a href="/openapi.json">/openapi.json</a></p>
+  </header>
+  <div id="ops"></div>
+  <footer id="foot"></footer>
+</main>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const el = (tag, props = {}, ...kids) => {
+  const e = Object.assign(document.createElement(tag), props);
+  kids.flat().forEach(k => e.append(k));
+  return e;
+};
+
+fetch('/openapi.json').then(r => r.json()).then(render).catch(e => {
+  $('#desc').textContent = 'Failed to load /openapi.json: ' + e.message;
+});
+
+function render(spec) {
+  document.title = (spec.info.title || 'API') + ' · Docs';
+  $('#title').textContent = spec.info.title || 'API';
+  $('#ver').textContent = 'v' + (spec.info.version || '');
+  $('#desc').textContent = spec.info.description || '';
+  $('#foot').textContent = spec.info.title + ' · OpenAPI ' + spec.openapi;
+
+  // group operations by first tag
+  const groups = {};
+  for (const [path, methods] of Object.entries(spec.paths || {})) {
+    for (const [method, op] of Object.entries(methods)) {
+      const tag = (op.tags && op.tags[0]) || 'default';
+      (groups[tag] ||= []).push({ path, method, op });
+    }
+  }
+  const descOf = Object.fromEntries((spec.tags || []).map(t => [t.name, t.description]));
+  const root = $('#ops');
+  for (const [tag, list] of Object.entries(groups)) {
+    root.append(el('h2', {}, tag, descOf[tag] ? el('small', { textContent: descOf[tag] }) : ''));
+    list.forEach(o => root.append(operation(o)));
+  }
+}
+
+function operation({ path, method, op }) {
+  const params = op.parameters || [];
+  const inputs = {};
+  const d = el('details', { className: 'op' });
+  d.append(el('summary', {},
+    el('span', { className: 'm ' + method, textContent: method }),
+    el('span', { className: 'path', textContent: path }),
+    el('span', { className: 'sum', textContent: op.summary || '' })));
+
+  const body = el('div', { className: 'body' });
+  if (op.description) body.append(el('p', { textContent: op.description }));
+
+  if (params.length) {
+    params.forEach(p => {
+      const input = el('input', { type: 'text', placeholder: p.example ?? '' });
+      if (p.example !== undefined) input.value = p.example;
+      inputs[p.name] = { input, p };
+      body.append(el('div', { className: 'row' },
+        el('div', {},
+          el('div', { className: 'pn' }, p.name, p.required ? el('span', { className: 'req', textContent: ' *' }) : ''),
+          el('div', { className: 'pt', textContent: (p.schema?.type || 'string') + ' · ' + p.in })),
+        el('div', {}, input, p.description ? el('div', { className: 'pd', textContent: p.description }) : '')));
+    });
+  } else {
+    body.append(el('div', { className: 'pd', textContent: 'No parameters.' }));
+  }
+
+  const run = el('button', { textContent: 'Execute' });
+  const clear = el('button', { className: 'ghost', textContent: 'Clear' });
+  body.append(el('div', { className: 'actions' }, run, clear));
+
+  const out = el('div');
+  body.append(out);
+
+  const responses = Object.entries(op.responses || {});
+  if (responses.length) {
+    body.append(el('div', { className: 'label', textContent: 'Responses' }));
+    responses.forEach(([code, r]) =>
+      body.append(el('div', { className: 'resp' }, el('b', { textContent: code }), '  ' + (r.description || ''))));
+  }
+  d.append(body);
+
+  function buildUrl() {
+    let p = path;
+    const qs = new URLSearchParams();
+    for (const [name, { input, p: def }] of Object.entries(inputs)) {
+      const v = input.value.trim();
+      if (!v) continue;
+      if (def.in === 'path') p = p.replace('{' + name + '}', encodeURIComponent(v));
+      else qs.append(name, v);
+    }
+    const q = qs.toString();
+    return p + (q ? '?' + q : '');
+  }
+
+  run.onclick = async () => {
+    const missing = Object.values(inputs).filter(({ input, p }) => p.required && !input.value.trim());
+    if (missing.length) { missing[0].input.focus(); return; }
+    const url = buildUrl();
+    run.disabled = true; run.textContent = 'Executing…';
+    out.replaceChildren();
+    const t0 = performance.now();
+    try {
+      const res = await fetch(url, { method: method.toUpperCase() });
+      const ms = Math.round(performance.now() - t0);
+      const raw = await res.text();
+      let text = raw;
+      try { text = JSON.stringify(JSON.parse(raw), null, 2); } catch {}
+      out.append(
+        el('div', { className: 'label', textContent: 'Request' }),
+        el('pre', { textContent: `curl -X ${method.toUpperCase()} "${location.origin}${url}"` }),
+        el('div', { className: 'label', textContent: 'Response' }),
+        el('div', { className: 'status ' + (res.ok ? 'ok' : 'err'), textContent: `${res.status} ${res.statusText} · ${ms} ms` }),
+        el('pre', { textContent: text }));
+    } catch (e) {
+      out.append(el('pre', { className: 'err', textContent: 'Request failed: ' + e.message }));
+    }
+    run.disabled = false; run.textContent = 'Execute';
+  };
+  clear.onclick = () => { out.replaceChildren(); };
+  return d;
+}
+</script>
+</body>
+</html>
